@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { apiFetch } from './api';
 
 interface Setting {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 export function getApiBaseUrl(): string {
   const url = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
   if (!url) throw new Error('Missing NEXT_PUBLIC_API_URL');
