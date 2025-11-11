@@ -24,3 +24,37 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+button, [role="button"], .btn {
+  cursor: pointer;
+}
+
+.btn-file {
+  display: inline-block;
+  background: #6b7280; /* gray-500 */
+  color: #ffffff; /* white */
+  padding: 0.10rem 0.05rem; /* smaller */
+  border-radius: 0.35rem;
+  font-weight: 400;
+}
+input[type="file"] {
+  display: none;
+}
+
+/* Skeleton loader */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e5e7eb; /* gray-200 */
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, rgba(229,231,235,0) 0%, rgba(255,255,255,0.6) 50%, rgba(229,231,235,0) 100%);
+  animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}

@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BadrikiDukan MVP
+
+A modular, scalable MVP for a local stationery shop with delivery.
+
+## Tech Stack
+- Next.js (App Router) + TypeScript
+- Tailwind CSS
+- MongoDB + Mongoose
+- JWT auth (httpOnly cookie)
+- Zustand/Redux (client state), React Query (server state)
+- Zod validation
 
 ## Getting Started
-
-First, run the development server:
+1. Copy `.env.example` to `.env.local` and fill values.
+2. Set `NEXT_PUBLIC_API_URL` to your backend URL (e.g., `http://localhost:4000`).
+3. Install deps and run dev (frontend only; backend runs separately):
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Structure
+```
+src/
+  app/
+    (public)/
+      (home)/page.tsx
+      auth/
+        login/page.tsx
+        register/page.tsx
+      cart/page.tsx
+      profile/page.tsx
+      products/page.tsx
+    (admin)/
+      admin/page.tsx
+    api/
+      auth/route.ts
+      products/route.ts
+      categories/route.ts
+      orders/route.ts
+  lib/
+    db.ts
+    auth.ts
+    validators.ts
+  models/
+    User.ts
+    Product.ts
+    Category.ts
+    Order.ts
+    Cart.ts
+  middleware/
+    auth.ts
+    rbac.ts
+  store/
+    auth.ts
+    cart.ts
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## First Admin User
+- On first run, if admin user doesn’t exist, create one using `ADMIN_DEFAULT_EMAIL` and `ADMIN_DEFAULT_PASSWORD`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
+- `npm run dev` - start dev server (frontend)
+- `npm run build` - build
+- `npm run start` - start production
 
-## Learn More
+## Notes
+- This MVP ships with COD-only ordering.
+- Designed to add payments, inventory, notifications later.
 
-To learn more about Next.js, take a look at the following resources:
+## Docker (Docker Desktop)
+Dev stack uses docker-compose to run: web (Next.js dev), MongoDB, Redis, Mongo Express.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Commands (run from repo root):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# start dev stack (hot reload) on http://localhost:3000
+docker compose up -d
 
-## Deploy on Vercel
+# follow logs (all services)
+docker compose logs -f
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# stop stack
+docker compose down
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# start only dbs (useful if running web locally)
+docker compose up -d mongo redis mongo-express
+
+# open Mongo Express: http://localhost:8081
+```
+
+Environment used by Compose:
+- Web env is in `docker-compose.yml` (overrides app defaults)
+- DB URI inside containers: `mongodb://mongo:27017/badrikidukan`
+
+Prod image (optional):
+
+```bash
+# build optimized image defined by web/Dockerfile
+docker compose --profile prod build web-prod
+
+# run prod container (depends on mongo/redis)
+docker compose --profile prod up -d mongo redis web-prod
+```
+
+Shell inside the web container:
+
+```bash
+docker compose exec web sh
+```
