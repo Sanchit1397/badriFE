@@ -92,8 +92,8 @@ export default function CartPage() {
 	}
 
 	return (
-		<div className="p-6 max-w-4xl mx-auto">
-			<h1 className="text-3xl font-semibold mb-6">Shopping Cart</h1>
+		<div className="p-4 sm:p-6 max-w-4xl mx-auto min-w-0 overflow-x-hidden">
+			<h1 className="text-2xl sm:text-3xl font-semibold mb-6 text-gray-900 dark:text-gray-100">Shopping Cart</h1>
 			{cartItems.length === 0 ? (
 				<div className="text-center py-12">
 					<p className="text-lg mb-4">Your cart is empty.</p>
@@ -125,12 +125,12 @@ export default function CartPage() {
 							const hasInsufficientStock = p.inventory?.track && (p.inventory?.stock || 0) > 0 && (p.inventory?.stock || 0) < item.quantity;
 
 							return (
-								<div key={item.slug} className={`border rounded p-4 flex gap-4 ${isOutOfStock ? 'bg-red-50 dark:bg-red-900/20' : ''}`}>
-									<div className="w-24 h-24 flex-shrink-0">
+								<div key={item.slug} className={`border rounded p-4 flex flex-col sm:flex-row gap-4 min-w-0 ${isOutOfStock ? 'bg-red-50 dark:bg-red-900/20' : ''}`}>
+									<div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0">
 										<ProductImage images={p.images} className={`w-full h-full object-cover rounded ${isOutOfStock ? 'opacity-50' : ''}`} />
 									</div>
-									<div className="flex-1">
-										<Link href={`/products/${p.slug}`} className="text-lg font-medium hover:text-orange-600">
+									<div className="flex-1 min-w-0">
+										<Link href={`/products/${p.slug}`} className="text-lg font-medium hover:text-orange-600 text-gray-900 dark:text-gray-100">
 											{p.name}
 										</Link>
 										<p className="text-green-700 dark:text-green-400 font-medium mt-1">₹{p.price.toFixed(2)}</p>
@@ -141,18 +141,19 @@ export default function CartPage() {
 											<p className="text-yellow-600 font-semibold text-sm mt-1">⚠️ Only {p.inventory?.stock} left in stock</p>
 										)}
 									</div>
-									<div className="flex flex-col items-end gap-2">
+									<div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 flex-shrink-0">
 										<div className="flex items-center gap-2">
 											<button
 												onClick={() => updateQuantity(item.slug, item.quantity - 1)}
-												className="w-8 h-8 border rounded hover:bg-gray-100"
+												className="w-9 h-9 flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 dark:active:bg-gray-500 font-medium"
 											>
-												-
+												−
 											</button>
-											<span className="w-12 text-center">{item.quantity}</span>
+											<span className="w-10 text-center font-medium text-gray-900 dark:text-gray-100">{item.quantity}</span>
 											<button
 												onClick={() => updateQuantity(item.slug, item.quantity + 1)}
-												className="w-8 h-8 border rounded hover:bg-gray-100"
+												disabled={isOutOfStock || (hasInsufficientStock && item.quantity >= (p.inventory?.stock || 0))}
+												className="w-9 h-9 flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 dark:active:bg-gray-500 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
 											>
 												+
 											</button>

@@ -135,17 +135,17 @@ export default function HomePage() {
 											Add to Cart
 										</button>
 									) : (
-										<div className="mt-auto flex items-center justify-between border rounded">
+										<div className="mt-auto flex items-center justify-between border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700">
 											<button
 												onClick={() => addItem(p.slug, -1)}
-												className="w-10 h-10 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
+												className="w-10 h-10 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 dark:active:bg-gray-500 text-gray-900 dark:text-gray-100 font-medium rounded-l"
 											>
 												−
 											</button>
 											<span className="text-gray-900 dark:text-gray-100 font-medium">{quantityInCart}</span>
 											<button
 												onClick={() => addItem(p.slug, 1)}
-												className="w-10 h-10 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
+												className="w-10 h-10 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 dark:active:bg-gray-500 text-gray-900 dark:text-gray-100 font-medium rounded-r"
 											>
 												+
 											</button>

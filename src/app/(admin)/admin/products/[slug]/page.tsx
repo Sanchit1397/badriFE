@@ -108,7 +108,8 @@ export default function EditProductPage() {
                 <textarea className="w-full border p-2 rounded text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" placeholder="Description (optional)" rows={4} value={form.description} onChange={(e) => setForm((f: any) => ({ ...f, description: e.target.value }))} />
                 <div>
                     <label className="block text-sm mb-1 text-gray-900 dark:text-gray-100">Images</label>
-                    <label className="btn-file">Choose files<input type="file" accept="image/*" multiple onChange={onUpload} /></label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Max 5 MB per image. Formats: JPEG, PNG, WebP.</p>
+                    <label className="btn-file">Choose files<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={onUpload} /></label>
                     {form.images.length > 0 && (
                         <div className="mt-2 space-y-2">
                             {form.images.map((img: any, idx: number) => (
