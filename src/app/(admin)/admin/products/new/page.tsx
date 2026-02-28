@@ -28,6 +28,7 @@ export default function NewProductPage() {
     const [images, setImages] = useState<{ hash: string; alt?: string; primary?: boolean }[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         if (!token || role !== 'admin') { router.push('/'); return; }
@@ -43,10 +44,20 @@ export default function NewProductPage() {
 
     async function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
         if (!e.target.files || !token) return;
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
         setError(null);
-        for (const file of Array.from(e.target.files)) {
-            const { hash } = await uploadFile(file, token);
-            setImages((arr) => arr.concat({ hash, primary: arr.length === 0 }));
+        setUploading(true);
+        try {
+            for (const file of files) {
+                const { hash } = await uploadFile(file, token);
+                setImages((arr) => arr.concat({ hash, primary: arr.length === 0 }));
+            }
+        } catch (err) {
+            setError((err as Error).message || 'Upload failed');
+        } finally {
+            setUploading(false);
+            e.target.value = '';
         }
     }
 
@@ -111,7 +122,16 @@ export default function NewProductPage() {
                 <div>
                     <label className="block text-sm mb-1 text-gray-900 dark:text-gray-100">Images</label>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Max 5 MB per image. Formats: JPEG, PNG, WebP.</p>
-                    <label className="btn-file">Choose files<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={onUpload} /></label>
+                    <label className={`btn-file inline-flex items-center gap-2 ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                        Choose files
+                        <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={onUpload} disabled={uploading} />
+                    </label>
+                    {uploading && (
+                        <div className="mt-2 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
+                            Uploading… Please wait.
+                        </div>
+                    )}
                     {images.length > 0 && (
                         <div className="mt-2 space-y-2">
                             {images.map((img, idx) => (

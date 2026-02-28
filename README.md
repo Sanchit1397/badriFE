@@ -1,4 +1,4 @@
-# BadrikiDukan MVP
+# BadrikiDukaan MVP
 
 A modular, scalable MVP for a local stationery shop with delivery.
 
