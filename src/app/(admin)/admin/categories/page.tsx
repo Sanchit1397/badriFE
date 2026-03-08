@@ -64,7 +64,10 @@ export default function AdminCategoriesPage() {
             <h1 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Categories</h1>
             <form onSubmit={addCategory} className="flex gap-2 mb-4">
                 <input className="border p-2 rounded flex-1 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" placeholder="Name" value={name} onChange={(e) => { setName(e.target.value); if (!slug) setSlug(toSlug(e.target.value)); }} />
-                <input className="border p-2 rounded flex-1 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" placeholder="Slug (optional)" value={slug} onChange={(e) => setSlug(e.target.value)} />
+                <div className="flex-1">
+                    <input className="w-full border p-2 rounded text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" placeholder="Slug (optional)" value={slug} onChange={(e) => setSlug(e.target.value)} />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Use lowercase letters and hyphens only (e.g. category-name). No spaces.</p>
+                </div>
                 <button className="bg-orange-600 text-white px-4 rounded hover:bg-orange-700" type="submit" disabled={!name}>Add</button>
             </form>
             {error && <p className="text-sm text-red-600">{error}</p>}

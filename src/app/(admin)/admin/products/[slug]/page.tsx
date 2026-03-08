@@ -111,7 +111,10 @@ export default function EditProductPage() {
             <h1 className="text-2xl font-semibold mb-4">Edit Product</h1>
             <form onSubmit={onSubmit} className="space-y-3">
                 <input className="w-full border p-2 rounded text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" placeholder="Name" value={form.name} onChange={(e) => setForm((f: any) => ({ ...f, name: e.target.value }))} />
-                <input className="w-full border p-2 rounded text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" placeholder="Slug" value={form.slug} onChange={(e) => setForm((f: any) => ({ ...f, slug: e.target.value }))} />
+                <div>
+                    <input className="w-full border p-2 rounded text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" placeholder="Slug" value={form.slug} onChange={(e) => setForm((f: any) => ({ ...f, slug: e.target.value }))} />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Use lowercase letters and hyphens only (e.g. product-name). No spaces.</p>
+                </div>
                 <input className="w-full border p-2 rounded text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" placeholder="Price" type="number" min="0" value={form.price} onChange={(e) => setForm((f: any) => ({ ...f, price: e.target.value }))} />
                 <select className="w-full border p-2 rounded text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" value={form.categorySlug} onChange={(e) => setForm((f: any) => ({ ...f, categorySlug: e.target.value }))}>
                     <option value="">Keep existing category</option>

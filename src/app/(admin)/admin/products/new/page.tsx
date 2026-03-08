@@ -112,7 +112,10 @@ export default function NewProductPage() {
             <h1 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">New Product</h1>
             <form onSubmit={onSubmit} className="space-y-3">
                 <input className="w-full border p-2 rounded text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" placeholder="Name" value={name} onChange={(e) => { setName(e.target.value); if (!slug) setSlug(toSlug(e.target.value)); }} />
-                <input className="w-full border p-2 rounded text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" placeholder="Slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
+                <div>
+                    <input className="w-full border p-2 rounded text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" placeholder="Slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Use lowercase letters and hyphens only (e.g. product-name). No spaces.</p>
+                </div>
                 <input className="w-full border p-2 rounded text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" placeholder="Price" type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
                 <select className="w-full border p-2 rounded text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800" value={category} onChange={(e) => setCategory(e.target.value)}>
                     <option value="">Select category</option>
