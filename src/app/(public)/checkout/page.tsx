@@ -6,11 +6,14 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart';
 import { useAuthStore } from '@/store/auth';
 import { apiFetch } from '@/lib/api';
+import { calculateDiscountedPrice } from '@/lib/discount';
 
 interface Product {
 	slug: string;
 	name: string;
 	price: number;
+	discount?: { type: 'percentage' | 'fixed'; value: number; active: boolean };
+	inventory?: { track: boolean; stock: number };
 }
 
 interface CartItemWithProduct {
@@ -90,7 +93,8 @@ export default function CheckoutPage() {
 
 	const subtotal = cartItems.reduce((sum, item) => {
 		if (!item.product) return sum;
-		return sum + item.product.price * item.quantity;
+		const unitPrice = calculateDiscountedPrice(item.product.price, item.product.discount);
+		return sum + unitPrice * item.quantity;
 	}, 0);
 
 	const deliveryFee = 50;
@@ -217,12 +221,13 @@ export default function CheckoutPage() {
 					{cartItems.map((item) => {
 						const p = item.product;
 						if (!p) return null;
+						const unitPrice = calculateDiscountedPrice(p.price, p.discount);
 						return (
 							<div key={item.slug} className="flex justify-between text-sm">
 								<span>
 									{p.name} × {item.quantity}
 								</span>
-								<span>₹{(p.price * item.quantity).toFixed(2)}</span>
+								<span>₹{(unitPrice * item.quantity).toFixed(2)}</span>
 							</div>
 						);
 					})}

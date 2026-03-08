@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { useCartStore } from '@/store/cart';
 import ProductGallery from '@/components/ProductGallery';
+import { calculateDiscountedPrice, hasActiveDiscount } from '@/lib/discount';
 
 interface Product {
     slug: string;
     name: string;
     price: number;
     description?: string;
+    discount?: { type: 'percentage' | 'fixed'; value: number; active: boolean };
     images?: { hash: string; alt?: string; primary?: boolean }[];
 }
 
@@ -52,7 +54,21 @@ export default function ProductDetail({ params }: { params: Promise<{ slug: stri
                 </div>
                 <div>
                     <h1 className="text-2xl font-semibold mb-2">{product.name}</h1>
-                    <p className="text-lg text-green-700 dark:text-green-400 font-medium mb-4">₹{product.price.toFixed(2)}</p>
+                    <div className="flex items-center gap-2 mb-4">
+                        {hasActiveDiscount(product.discount) ? (
+                            <>
+                                <span className="text-lg text-green-700 dark:text-green-400 font-semibold">
+                                    ₹{calculateDiscountedPrice(product.price, product.discount).toFixed(2)}
+                                </span>
+                                <span className="text-sm line-through text-gray-500">₹{product.price.toFixed(2)}</span>
+                                <span className="text-xs bg-orange-600 text-white px-1.5 py-0.5 rounded font-semibold">
+                                    {product.discount?.type === 'percentage' ? `${product.discount.value}% OFF` : `₹${product.discount?.value} OFF`}
+                                </span>
+                            </>
+                        ) : (
+                            <span className="text-lg text-green-700 dark:text-green-400 font-medium">₹{product.price.toFixed(2)}</span>
+                        )}
+                    </div>
                     {product.description && (
                         <p className="mb-6 whitespace-pre-line text-sm text-gray-900 dark:text-gray-100">{product.description}</p>
                     )}

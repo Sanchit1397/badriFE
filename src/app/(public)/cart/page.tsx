@@ -9,11 +9,13 @@ import { apiFetch } from '@/lib/api';
 import ProductImage from '@/components/ProductImage';
 import CartItemSkeleton from '@/components/skeletons/CartItemSkeleton';
 import { getPublicSetting } from '@/lib/settings';
+import { calculateDiscountedPrice, hasActiveDiscount } from '@/lib/discount';
 
 interface Product {
 	slug: string;
 	name: string;
 	price: number;
+	discount?: { type: 'percentage' | 'fixed'; value: number; active: boolean };
 	images?: { hash: string; alt?: string; primary?: boolean }[];
 	inventory?: { track: boolean; stock: number };
 }
@@ -64,7 +66,8 @@ export default function CartPage() {
 
 	const subtotal = cartItems.reduce((sum, item) => {
 		if (!item.product) return sum;
-		return sum + item.product.price * item.quantity;
+		const unitPrice = calculateDiscountedPrice(item.product.price, item.product.discount);
+		return sum + unitPrice * item.quantity;
 	}, 0);
 
 	const deliveryFee = 50; // Fixed delivery fee
@@ -133,7 +136,18 @@ export default function CartPage() {
 										<Link href={`/products/${p.slug}`} className="text-lg font-medium hover:text-orange-600 text-gray-900 dark:text-gray-100">
 											{p.name}
 										</Link>
-										<p className="text-green-700 dark:text-green-400 font-medium mt-1">₹{p.price.toFixed(2)}</p>
+										<div className="flex items-center gap-2 mt-1">
+											{hasActiveDiscount(p.discount) ? (
+												<>
+													<span className="text-green-700 dark:text-green-400 font-medium">
+														₹{calculateDiscountedPrice(p.price, p.discount).toFixed(2)}
+													</span>
+													<span className="text-sm line-through text-gray-500">₹{p.price.toFixed(2)}</span>
+												</>
+											) : (
+												<span className="text-green-700 dark:text-green-400 font-medium">₹{p.price.toFixed(2)}</span>
+											)}
+										</div>
 										{isOutOfStock && (
 											<p className="text-red-600 font-semibold text-sm mt-1">⚠️ Out of Stock - Please remove from cart</p>
 										)}
