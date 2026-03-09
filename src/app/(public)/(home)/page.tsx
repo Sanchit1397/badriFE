@@ -1,9 +1,7 @@
-// @ts-nocheck
-"use client";
+'use client';
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/store/auth';
 import { useCartStore } from '@/store/cart';
 import { apiFetch } from '@/lib/api';
 import ProductImage from '@/components/ProductImage';
@@ -19,54 +17,28 @@ interface Product {
 }
 
 export default function HomePage() {
-	const token = useAuthStore((s) => s.token);
 	const { items: cartItems, addItem } = useCartStore();
 	const [deals, setDeals] = useState<Product[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		if (!token) return;
-
+		let mounted = true;
 		const fetchDeals = async () => {
 			try {
-				// Fetch published products and filter for active discounts
 				const data = await apiFetch<{ items: Product[] }>('/catalog/products?published=true&limit=6');
 				const discountedProducts = data.items.filter((p) => hasActiveDiscount(p.discount));
-				setDeals(discountedProducts.slice(0, 6)); // Show max 6 deals
+				if (mounted) setDeals(discountedProducts.slice(0, 6));
 			} catch (err) {
-				console.error('Failed to fetch deals:', err);
+				if (mounted) setDeals([]);
 			} finally {
-				setLoading(false);
+				if (mounted) setLoading(false);
 			}
 		};
-
 		fetchDeals();
-	}, [token]);
-
-	if (!token) {
-		return (
-			<div className="p-6 max-w-4xl mx-auto text-center">
-				<h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-gray-100">Welcome to BadrikiDukaan</h1>
-				<p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-					Your one-stop shop for stationery and more!
-				</p>
-				<div className="mt-6 flex gap-3 justify-center">
-					<Link
-						href="/auth/login"
-						className="inline-block bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 font-medium"
-					>
-						Login
-					</Link>
-					<Link
-						href="/auth/register"
-						className="inline-block border border-orange-600 text-orange-600 dark:text-orange-400 px-6 py-3 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 font-medium"
-					>
-						Register
-					</Link>
-				</div>
-			</div>
-		);
-	}
+		return () => {
+			mounted = false;
+		};
+	}, []);
 
 	return (
 		<div className="p-4 sm:p-6 max-w-6xl mx-auto">

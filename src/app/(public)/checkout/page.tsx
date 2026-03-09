@@ -40,7 +40,7 @@ export default function CheckoutPage() {
 	// Redirect if not authenticated and load saved address/phone
 	useEffect(() => {
 		if (!token) {
-			router.replace('/auth/login');
+			router.replace('/auth/login?returnUrl=/checkout');
 			return;
 		}
 
@@ -48,8 +48,7 @@ export default function CheckoutPage() {
 		const loadProfile = async () => {
 			try {
 				const data = await apiFetch<{ profile: { phone?: string; address?: string } }>('/profile', {}, token);
-				console.log('Profile loaded:', data.profile); // Debug log
-				
+
 				// Only set if fields are currently empty (don't override user's edits)
 				if (data.profile.address && !address) {
 					setAddress(data.profile.address);
@@ -57,8 +56,8 @@ export default function CheckoutPage() {
 				if (data.profile.phone && !phone) {
 					setPhone(data.profile.phone);
 				}
-			} catch (err) {
-				console.error('Failed to load profile for auto-fill:', err); // Debug log
+			} catch {
+				// Profile load failed; user can enter address/phone manually
 			}
 		};
 

@@ -75,7 +75,7 @@ export default function CartPage() {
 
 	const handleProceedToCheckout = () => {
 		if (!token) {
-			router.push('/auth/login');
+			router.push('/auth/login?returnUrl=/checkout');
 			return;
 		}
 		router.push('/checkout');
