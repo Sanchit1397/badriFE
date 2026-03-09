@@ -33,17 +33,26 @@ export const useAuthStore = create<AuthState>()(
  * Waits for Zustand persist to rehydrate before returning auth state.
  * Use this on pages that redirect based on auth (e.g. checkout, login)
  * to avoid redirecting before persisted token is loaded.
+ * Safe for SSR: persist is undefined on server, so we treat as not hydrated.
  */
 export function useAuthReady(): { hasHydrated: boolean; token: string | null } {
 	const token = useAuthStore((s) => s.token);
-	const [hasHydrated, setHasHydrated] = useState(() => useAuthStore.persist.hasHydrated());
+	const [hasHydrated, setHasHydrated] = useState(() => {
+		if (typeof window === 'undefined') return false;
+		return useAuthStore.persist?.hasHydrated?.() ?? false;
+	});
 
 	useEffect(() => {
-		if (useAuthStore.persist.hasHydrated()) {
+		const persist = useAuthStore.persist;
+		if (!persist?.hasHydrated) {
 			setHasHydrated(true);
 			return;
 		}
-		const unsub = useAuthStore.persist.onFinishHydration(() => setHasHydrated(true));
+		if (persist.hasHydrated()) {
+			setHasHydrated(true);
+			return;
+		}
+		const unsub = persist.onFinishHydration(() => setHasHydrated(true));
 		return unsub;
 	}, []);
 
