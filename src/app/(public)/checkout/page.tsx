@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart';
-import { useAuthStore } from '@/store/auth';
+import { useAuthReady } from '@/store/auth';
 import { apiFetch } from '@/lib/api';
 import { calculateDiscountedPrice } from '@/lib/discount';
 
@@ -24,7 +24,7 @@ interface CartItemWithProduct {
 
 export default function CheckoutPage() {
 	const { items, clear } = useCartStore();
-	const { token } = useAuthStore();
+	const { hasHydrated, token } = useAuthReady();
 	const router = useRouter();
 
 	const [cartItems, setCartItems] = useState<CartItemWithProduct[]>([]);
@@ -37,8 +37,9 @@ export default function CheckoutPage() {
 	const [address, setAddress] = useState('');
 	const [phone, setPhone] = useState('');
 
-	// Redirect if not authenticated and load saved address/phone
+	// Redirect if not authenticated (after rehydration) and load saved address/phone
 	useEffect(() => {
+		if (!hasHydrated) return;
 		if (!token) {
 			router.replace('/auth/login?returnUrl=/checkout');
 			return;
@@ -62,7 +63,7 @@ export default function CheckoutPage() {
 		};
 
 		loadProfile();
-	}, [token, router]); // Removed address/phone from deps to avoid loops
+	}, [hasHydrated, token, router]);
 
 	// Fetch product details for all cart items
 	useEffect(() => {
@@ -184,6 +185,9 @@ export default function CheckoutPage() {
 		}
 	};
 
+	if (!hasHydrated) {
+		return <div className="p-6 max-w-2xl mx-auto">Loading checkout...</div>;
+	}
 	if (!token) {
 		return null; // Will redirect in useEffect
 	}

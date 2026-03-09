@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -8,7 +9,7 @@ interface AuthState {
 	role: Role;
 	email: string | null;
 	name: string | null;
-    lastLoginAt: number | null;
+	lastLoginAt: number | null;
 	setAuth: (payload: { token: string; role: 'user' | 'admin'; email: string; name?: string }) => void;
 	clearAuth: () => void;
 }
@@ -19,11 +20,32 @@ export const useAuthStore = create<AuthState>()(
 			token: null,
 			role: null,
 			email: null,
-            name: null,
-            lastLoginAt: null,
-            setAuth: ({ token, role, email, name }) => set({ token, role, email, name: name || null, lastLoginAt: Date.now() }),
-            clearAuth: () => set({ token: null, role: null, email: null, name: null, lastLoginAt: null }),
+			name: null,
+			lastLoginAt: null,
+			setAuth: ({ token, role, email, name }) => set({ token, role, email, name: name || null, lastLoginAt: Date.now() }),
+			clearAuth: () => set({ token: null, role: null, email: null, name: null, lastLoginAt: null }),
 		}),
 		{ name: 'bd_auth' }
 	)
 );
+
+/**
+ * Waits for Zustand persist to rehydrate before returning auth state.
+ * Use this on pages that redirect based on auth (e.g. checkout, login)
+ * to avoid redirecting before persisted token is loaded.
+ */
+export function useAuthReady(): { hasHydrated: boolean; token: string | null } {
+	const token = useAuthStore((s) => s.token);
+	const [hasHydrated, setHasHydrated] = useState(() => useAuthStore.persist.hasHydrated());
+
+	useEffect(() => {
+		if (useAuthStore.persist.hasHydrated()) {
+			setHasHydrated(true);
+			return;
+		}
+		const unsub = useAuthStore.persist.onFinishHydration(() => setHasHydrated(true));
+		return unsub;
+	}, []);
+
+	return { hasHydrated, token };
+}

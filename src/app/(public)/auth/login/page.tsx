@@ -1,9 +1,10 @@
 'use client';
 
-import { Suspense, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
+import { useAuthReady } from '@/store/auth';
 
 const DEFAULT_REDIRECT = '/';
 
@@ -16,10 +17,25 @@ function LoginForm() {
 	const [loading, setLoading] = useState(false);
 	const [resending, setResending] = useState(false);
 	const setAuth = useAuthStore((s) => s.setAuth);
+	const { hasHydrated, token } = useAuthReady();
+	const router = useRouter();
 	const searchParams = useSearchParams();
 	const rawReturnUrl = searchParams.get('returnUrl') || DEFAULT_REDIRECT;
 	// Only allow internal paths to prevent open redirect
 	const returnUrl = rawReturnUrl.startsWith('/') && !rawReturnUrl.startsWith('//') ? rawReturnUrl : DEFAULT_REDIRECT;
+
+	// Redirect already-logged-in users (e.g. after rehydration from checkout redirect)
+	useEffect(() => {
+		if (!hasHydrated || !token) return;
+		router.replace(returnUrl);
+	}, [hasHydrated, token, returnUrl, router]);
+
+	if (!hasHydrated) {
+		return <div className="max-w-sm mx-auto p-6">Loading…</div>;
+	}
+	if (token) {
+		return <div className="max-w-sm mx-auto p-6">Redirecting…</div>;
+	}
 
 	async function onSubmit(e: React.FormEvent) {
 		e.preventDefault();
