@@ -14,7 +14,6 @@ interface Profile {
 	phone: string;
 	address: string;
 	role: string;
-	isVerified: boolean;
 	createdAt: string;
 }
 
@@ -229,9 +228,6 @@ export default function ProfilePage() {
 							<div>
 								<label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Email</label>
 								<p className="text-lg text-gray-900 dark:text-gray-100">{profile.email}</p>
-								{!profile.isVerified && (
-									<span className="text-xs text-red-600 dark:text-red-400">(Not verified)</span>
-								)}
 							</div>
 							<div>
 								<label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Phone</label>
@@ -277,9 +273,6 @@ export default function ProfilePage() {
 									className="w-full border rounded p-2 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800"
 									required
 								/>
-								<p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-									Note: Changing your email will require re-verification
-								</p>
 							</div>
 							<div>
 								<label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Phone (Optional)</label>

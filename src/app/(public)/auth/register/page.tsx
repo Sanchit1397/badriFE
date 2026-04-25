@@ -12,7 +12,8 @@ export default function RegisterPage() {
     const [showPwd, setShowPwd] = useState(false);
 	const [error, setError] = useState<string | null>(null);
     const [sent, setSent] = useState(false);
-    const [previewLink, setPreviewLink] = useState<string | null>(null);
+    // Temporarily disabled: showing a verification preview link after registration.
+    // const [previewLink, setPreviewLink] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
     async function onSubmit(e: React.FormEvent) {
@@ -20,12 +21,14 @@ export default function RegisterPage() {
         setError(null);
         try {
             setLoading(true);
-            const data = await apiFetch<{ ok: true; message: string; verificationLink?: string }>(
+            // Re-enable with:
+            // const data = await apiFetch<{ ok: true; message: string; verificationLink?: string }>(
+            await apiFetch<{ ok: true; message: string }>(
                 '/auth/register',
                 { method: 'POST', body: JSON.stringify({ name, email, password }) }
             );
             setSent(true);
-            setPreviewLink(data.verificationLink || null);
+            // setPreviewLink(data.verificationLink || null);
         } catch (err: unknown) {
             const e = err as Error & { code?: string; details?: any };
             if (e.code === 'UNPROCESSABLE_ENTITY' && e.details?.fieldErrors) {
@@ -46,11 +49,13 @@ export default function RegisterPage() {
             <h1 className="text-xl font-semibold mb-4">Create account</h1>
             {sent ? (
                 <div className="space-y-3">
-                    <p>We sent a verification link to <strong>{email}</strong>. Please check your inbox.</p>
+                    <p>Registration successful for <strong>{email}</strong>.</p>
+                    <p className="text-sm">You can now <Link href="/auth/login" className="underline">log in</Link>.</p>
+                    {/* Re-enable when verification returns:
                     {previewLink && (
                         <p className="text-sm">Dev preview: <a className="underline text-blue-600" href={previewLink} target="_blank" rel="noreferrer">Open email</a></p>
                     )}
-                    <p className="text-sm">After verifying, you can <Link href="/auth/login" className="underline">log in</Link>.</p>
+                    */}
                 </div>
             ) : (
                 <form onSubmit={onSubmit} className="space-y-3">
@@ -63,7 +68,6 @@ export default function RegisterPage() {
                         </button>
                     </div>
                     {error && <p className="text-sm text-red-600">{error}</p>}
-                    <p className="text-xs text-gray-600">By continuing, you will receive a verification link via email.</p>
                     <p className="text-xs">Already have an account? <Link href="/auth/login" className="underline">Login</Link></p>
                     <button className="w-full bg-blue-600 text-white py-2 rounded disabled:opacity-50" type="submit" disabled={loading || !name || !email || !password}>
                         {loading ? 'Creating account…' : 'Register'}
