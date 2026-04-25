@@ -27,6 +27,25 @@ export default function AdminSettingsPage() {
 	const [editingKey, setEditingKey] = useState<string | null>(null);
 	const [editValues, setEditValues] = useState<Record<string, string | number | boolean>>({});
 	const [saving, setSaving] = useState<Record<string, boolean>>({});
+	const [seeding, setSeeding] = useState(false);
+
+	const fetchSettings = async () => {
+		setLoading(true);
+		setError('');
+		try {
+			const data = await apiFetch<{ settings: Setting[] }>('/admin/settings', {}, token);
+			setSettings(data.settings);
+			const initialValues: Record<string, string | number | boolean> = {};
+			data.settings.forEach((s) => {
+				initialValues[s.key] = s.value;
+			});
+			setEditValues(initialValues);
+		} catch (err: any) {
+			setError(err.message || 'Failed to load settings');
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	useEffect(() => {
 		if (!token || role !== 'admin') {
@@ -34,27 +53,21 @@ export default function AdminSettingsPage() {
 			return;
 		}
 
-		const fetchSettings = async () => {
-			setLoading(true);
-			setError('');
-			try {
-				const data = await apiFetch<{ settings: Setting[] }>('/admin/settings', {}, token);
-				setSettings(data.settings);
-				// Initialize edit values
-				const initialValues: Record<string, string | number | boolean> = {};
-				data.settings.forEach((s) => {
-					initialValues[s.key] = s.value;
-				});
-				setEditValues(initialValues);
-			} catch (err: any) {
-				setError(err.message || 'Failed to load settings');
-			} finally {
-				setLoading(false);
-			}
-		};
-
 		fetchSettings();
 	}, [token, role, router]);
+
+	const handleSeedDefaults = async () => {
+		setSeeding(true);
+		setError('');
+		try {
+			await apiFetch('/admin/settings/seed', { method: 'POST' }, token);
+			await fetchSettings();
+		} catch (err: any) {
+			setError(err.message || 'Failed to seed default settings');
+		} finally {
+			setSeeding(false);
+		}
+	};
 
 	const handleSave = async (setting: Setting) => {
 		setSaving((prev) => ({ ...prev, [setting.key]: true }));
@@ -275,7 +288,17 @@ export default function AdminSettingsPage() {
 			{settings.length === 0 && !loading && (
 				<div className="text-center py-12 text-gray-600 dark:text-gray-400">
 					<p className="mb-4">No settings found.</p>
-					<p className="text-sm">Run `npm run seed:settings` in the API directory to create default settings.</p>
+					<div className="space-y-3">
+						<p className="text-sm">Initialize defaults once for this environment.</p>
+						<button
+							type="button"
+							onClick={handleSeedDefaults}
+							disabled={seeding}
+							className="px-4 py-2 rounded bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50"
+						>
+							{seeding ? 'Initializing...' : 'Initialize Default Settings'}
+						</button>
+					</div>
 				</div>
 			)}
 		</div>
