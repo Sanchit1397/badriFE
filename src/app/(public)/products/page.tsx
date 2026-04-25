@@ -8,9 +8,10 @@ import { apiFetch } from '@/lib/api';
 import { useCartStore } from '@/store/cart';
 import ProductImage from '@/components/ProductImage';
 import ProductCardSkeleton from '@/components/skeletons/ProductCardSkeleton';
+import CategoryRail from '@/components/CategoryRail';
 import { calculateDiscountedPrice, hasActiveDiscount } from '@/lib/discount';
 
-interface Category { slug: string; name: string }
+interface Category { slug: string; name: string; icon?: string; isActive?: boolean }
 interface Product { 
     slug: string; 
     name: string; 
@@ -82,14 +83,13 @@ function ProductsContent() {
     return (
         <div className="p-6 space-y-4">
             <h1 className="text-2xl font-semibold">Products</h1>
+            <CategoryRail
+                categories={categories}
+                selectedSlug={category}
+                onSelect={(slug) => setParam('category', slug)}
+            />
             <div className="flex flex-wrap gap-3 items-center">
                 <input className="border p-2 rounded" placeholder="Search…" value={q} onChange={(e) => setParam('q', e.target.value)} />
-                <select className="border p-2 rounded" value={category} onChange={(e) => setParam('category', e.target.value)}>
-                    <option value="">All categories</option>
-                    {categories.map((c) => (
-                        <option key={c.slug} value={c.slug}>{c.name}</option>
-                    ))}
-                </select>
                 <select className="border p-2 rounded" value={sort} onChange={(e) => setParam('sort', e.target.value)}>
                     <option value="new">Newest</option>
                     <option value="price_asc">Price: Low to High</option>

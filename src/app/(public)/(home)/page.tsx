@@ -2,10 +2,19 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart';
 import { apiFetch } from '@/lib/api';
 import ProductImage from '@/components/ProductImage';
+import CategoryRail from '@/components/CategoryRail';
 import { calculateDiscountedPrice, hasActiveDiscount } from '@/lib/discount';
+
+interface Category {
+	slug: string;
+	name: string;
+	icon?: string;
+	isActive?: boolean;
+}
 
 interface Product {
 	slug: string;
@@ -17,24 +26,31 @@ interface Product {
 }
 
 export default function HomePage() {
+	const router = useRouter();
 	const { items: cartItems, addItem } = useCartStore();
+	const [categories, setCategories] = useState<Category[]>([]);
 	const [deals, setDeals] = useState<Product[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
 		let mounted = true;
-		const fetchDeals = async () => {
+		const fetchData = async () => {
 			try {
-				const data = await apiFetch<{ items: Product[] }>('/catalog/products?published=true&limit=6');
+				const [categoryData, data] = await Promise.all([
+					apiFetch<{ items: Category[] }>('/catalog/categories'),
+					apiFetch<{ items: Product[] }>('/catalog/products?published=true&limit=6')
+				]);
+				if (mounted) setCategories(categoryData.items);
 				const discountedProducts = data.items.filter((p) => hasActiveDiscount(p.discount));
 				if (mounted) setDeals(discountedProducts.slice(0, 6));
 			} catch (err) {
+				if (mounted) setCategories([]);
 				if (mounted) setDeals([]);
 			} finally {
 				if (mounted) setLoading(false);
 			}
 		};
-		fetchDeals();
+		fetchData();
 		return () => {
 			mounted = false;
 		};
@@ -48,6 +64,12 @@ export default function HomePage() {
 					Welcome to BadrikiDukaan 🛒
 				</h1>
 				<p className="text-gray-600 dark:text-gray-400">Discover great deals and shop for your favorites!</p>
+			</div>
+			<div className="mb-8">
+				<CategoryRail
+					categories={categories}
+					onSelect={(slug) => router.push(slug ? `/products?category=${encodeURIComponent(slug)}` : '/products')}
+				/>
 			</div>
 
 			{/* Deals Section */}
