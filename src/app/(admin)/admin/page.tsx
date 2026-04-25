@@ -116,7 +116,7 @@ function AdminDashboardInner() {
                                         )}
                                     </td>
                                     <td className="text-right space-x-3">
-                                        <Link className="underline" href={`/admin/products/${p.slug}`}>Edit</Link>
+                                        <Link className="underline" href={`/admin/products/edit/${p.slug}`}>Edit</Link>
                                         <button onClick={() => onDelete(p.slug)} className="underline text-red-600">Delete</button>
                                     </td>
                                 </tr>

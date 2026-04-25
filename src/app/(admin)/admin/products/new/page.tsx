@@ -72,6 +72,8 @@ export default function NewProductPage() {
                 price: Number(price),
                 categorySlug: category,
                 description: description || undefined,
+                images,
+                published,
                 inventory: {
                     track: trackInventory,
                     stock: Number(stock)
@@ -82,15 +84,9 @@ export default function NewProductPage() {
                     active: discountActive
                 } : undefined
             } as any;
-            const created = await apiFetch<{ product: { slug: string } }>(
+            await apiFetch<{ product: { slug: string } }>(
                 '/catalog/products',
                 { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(body) },
-                token
-            );
-            // update images/published via PUT
-            await apiFetch(
-                `/catalog/products/${encodeURIComponent(created.product.slug)}`,
-                { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ images, published }) },
                 token
             );
             router.push('/admin');
