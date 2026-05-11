@@ -7,6 +7,7 @@ import { useCartStore } from '@/store/cart';
 import { useAuthReady } from '@/store/auth';
 import { apiFetch } from '@/lib/api';
 import { calculateDiscountedPrice } from '@/lib/discount';
+import { getStoreConfig, computeDeliveryFee, type IStoreConfig } from '@/lib/storeConfig';
 
 interface Product {
 	slug: string;
@@ -32,6 +33,7 @@ export default function CheckoutPage() {
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState('');
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+	const [storeConfig, setStoreConfig] = useState<IStoreConfig | null>(null);
 
 	// Form state
 	const [address, setAddress] = useState('');
@@ -65,6 +67,22 @@ export default function CheckoutPage() {
 		loadProfile();
 	}, [hasHydrated, token, router]);
 
+	useEffect(() => {
+		if (!hasHydrated || !token) return;
+		let cancelled = false;
+		(async () => {
+			try {
+				const cfg = await getStoreConfig();
+				if (!cancelled) setStoreConfig(cfg);
+			} catch {
+				if (!cancelled) setStoreConfig(null);
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [hasHydrated, token]);
+
 	// Fetch product details for all cart items
 	useEffect(() => {
 		const fetchProducts = async () => {
@@ -97,8 +115,11 @@ export default function CheckoutPage() {
 		return sum + unitPrice * item.quantity;
 	}, 0);
 
-	const deliveryFee = 50;
+	const deliveryFee = storeConfig ? computeDeliveryFee(subtotal, storeConfig) : 0;
 	const total = subtotal + deliveryFee;
+	const totalItemQty = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+	const maxItemsPerOrder = storeConfig?.max_items_per_order ?? 0;
+	const overMaxItems = maxItemsPerOrder > 0 && totalItemQty > maxItemsPerOrder;
 
 	// Check for out-of-stock or insufficient stock items
 	const hasStockIssues = cartItems.some((item) => {
@@ -117,6 +138,11 @@ export default function CheckoutPage() {
 		// Prevent checkout if stock issues
 		if (hasStockIssues) {
 			setError('Some items in your cart are out of stock or have insufficient stock. Please update your cart.');
+			return;
+		}
+
+		if (overMaxItems) {
+			setError(`This order exceeds the maximum of ${maxItemsPerOrder} items. Please reduce quantities or split your order.`);
 			return;
 		}
 
@@ -154,7 +180,6 @@ export default function CheckoutPage() {
 					method: 'POST',
 					body: JSON.stringify({
 						items: orderItems,
-						deliveryFee,
 						address,
 						phone,
 					}),
@@ -242,13 +267,18 @@ export default function CheckoutPage() {
 					</div>
 					<div className="flex justify-between">
 						<span>Delivery Fee:</span>
-						<span>₹{deliveryFee.toFixed(2)}</span>
+						<span>{deliveryFee === 0 ? 'Free' : `₹${deliveryFee.toFixed(2)}`}</span>
 					</div>
 					<div className="flex justify-between text-lg font-semibold">
 						<span>Total:</span>
 						<span className="text-green-700 dark:text-green-400">₹{total.toFixed(2)}</span>
 					</div>
 				</div>
+				{storeConfig && storeConfig.free_delivery_threshold > 0 && subtotal < storeConfig.free_delivery_threshold && deliveryFee > 0 && (
+					<p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+						Add ₹{(storeConfig.free_delivery_threshold - subtotal).toFixed(2)} more for free delivery on orders of ₹{storeConfig.free_delivery_threshold} or more.
+					</p>
+				)}
 			</div>
 
 			{/* Checkout Form */}
@@ -309,8 +339,14 @@ export default function CheckoutPage() {
 				<button
 					type="submit"
 					className="flex-1 bg-orange-600 text-white py-2 px-6 rounded hover:bg-orange-700 disabled:bg-gray-400"
-					disabled={submitting || hasStockIssues}
-					title={hasStockIssues ? 'Please update cart - some items are out of stock' : ''}
+					disabled={submitting || hasStockIssues || overMaxItems}
+					title={
+						overMaxItems
+							? 'Too many items for one order'
+							: hasStockIssues
+								? 'Please update cart - some items are out of stock'
+								: ''
+					}
 				>
 					{submitting ? 'Placing Order...' : 'Place Order (COD)'}
 				</button>

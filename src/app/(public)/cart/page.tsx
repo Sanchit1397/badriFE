@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/auth';
 import { apiFetch } from '@/lib/api';
 import ProductImage from '@/components/ProductImage';
 import CartItemSkeleton from '@/components/skeletons/CartItemSkeleton';
-import { getPublicSetting } from '@/lib/settings';
+import { getStoreConfig, computeDeliveryFee, type IStoreConfig } from '@/lib/storeConfig';
 import { calculateDiscountedPrice, hasActiveDiscount } from '@/lib/discount';
 
 interface Product {
@@ -32,14 +32,17 @@ export default function CartPage() {
 	const router = useRouter();
 	const [cartItems, setCartItems] = useState<CartItemWithProduct[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [minimumOrderValue, setMinimumOrderValue] = useState<number>(0);
+	const [storeConfig, setStoreConfig] = useState<IStoreConfig | null>(null);
 
 	// Fetch product details for all cart items and settings
 	useEffect(() => {
 		const fetchData = async () => {
-			// Fetch minimum order value
-			const minOrder = await getPublicSetting<number>('minimum_order_value', 0);
-			setMinimumOrderValue(minOrder);
+			try {
+				const cfg = await getStoreConfig();
+				setStoreConfig(cfg);
+			} catch {
+				setStoreConfig(null);
+			}
 
 			// Fetch products
 			const itemsWithProducts = await Promise.all(
@@ -70,8 +73,12 @@ export default function CartPage() {
 		return sum + unitPrice * item.quantity;
 	}, 0);
 
-	const deliveryFee = 50; // Fixed delivery fee
+	const minimumOrderValue = storeConfig?.minimum_order_value ?? 0;
+	const deliveryFee = storeConfig ? computeDeliveryFee(subtotal, storeConfig) : 0;
 	const total = subtotal + deliveryFee;
+	const totalItemQty = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+	const maxItemsPerOrder = storeConfig?.max_items_per_order ?? 0;
+	const overMaxItems = maxItemsPerOrder > 0 && totalItemQty > maxItemsPerOrder;
 
 	const handleProceedToCheckout = () => {
 		if (!token) {
@@ -190,13 +197,29 @@ export default function CartPage() {
 							</div>
 							<div className="flex justify-between">
 								<span>Delivery Fee:</span>
-								<span>₹{deliveryFee.toFixed(2)}</span>
+								<span>{deliveryFee === 0 ? 'Free' : `₹${deliveryFee.toFixed(2)}`}</span>
 							</div>
 							<div className="flex justify-between text-xl font-semibold">
 								<span>Total:</span>
 								<span className="text-green-700 dark:text-green-400">₹{total.toFixed(2)}</span>
 							</div>
 						</div>
+
+						{storeConfig && storeConfig.free_delivery_threshold > 0 && subtotal < storeConfig.free_delivery_threshold && deliveryFee > 0 && (
+							<div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+								<p className="text-sm text-gray-800">
+									Add ₹{(storeConfig.free_delivery_threshold - subtotal).toFixed(2)} more for free delivery (orders ₹{storeConfig.free_delivery_threshold}+).
+								</p>
+							</div>
+						)}
+
+						{overMaxItems && (
+							<div className="mb-4 p-3 bg-red-50 border border-red-300 rounded">
+								<p className="text-sm font-medium text-red-800">
+									This cart has {totalItemQty} items; the maximum per order is {maxItemsPerOrder}. Reduce quantities before checkout.
+								</p>
+							</div>
+						)}
 
 						{/* Minimum Order Warning */}
 						{minimumOrderValue > 0 && subtotal < minimumOrderValue && (
@@ -216,9 +239,15 @@ export default function CartPage() {
 							</button>
 							<button
 								onClick={handleProceedToCheckout}
-								disabled={minimumOrderValue > 0 && subtotal < minimumOrderValue}
+								disabled={(minimumOrderValue > 0 && subtotal < minimumOrderValue) || overMaxItems}
 								className="flex-1 bg-orange-600 text-white py-2 px-4 rounded hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
-								title={minimumOrderValue > 0 && subtotal < minimumOrderValue ? `Add ₹${(minimumOrderValue - subtotal).toFixed(2)} more to checkout` : ''}
+								title={
+									overMaxItems
+										? 'Too many items for one order'
+										: minimumOrderValue > 0 && subtotal < minimumOrderValue
+											? `Add ₹${(minimumOrderValue - subtotal).toFixed(2)} more to checkout`
+											: ''
+								}
 							>
 								Proceed to Checkout
 							</button>

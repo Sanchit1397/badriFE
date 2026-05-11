@@ -29,7 +29,10 @@ export async function POST(req: NextRequest) {
 		})
 	);
 	const subtotal = itemsPopulated.reduce((sum, i) => sum + i.priceAtPurchase * i.quantity, 0);
-	const deliveryFee = parsed.data.deliveryFee;
+	const baseFee = Number(process.env.DELIVERY_BASE_FEE ?? 50);
+	const freeThreshold = Number(process.env.FREE_DELIVERY_THRESHOLD ?? 0);
+	const deliveryFee =
+		freeThreshold > 0 && subtotal >= freeThreshold ? 0 : Math.max(0, baseFee);
 	const total = subtotal + deliveryFee;
 	const order = await Order.create({
 		user: user.uid,

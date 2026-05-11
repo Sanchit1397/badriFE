@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth';
 import { apiFetch } from '@/lib/api';
+import { clearStoreConfigCache } from '@/lib/storeConfig';
 
 interface Setting {
 	_id: string;
@@ -61,6 +62,7 @@ export default function AdminSettingsPage() {
 		setError('');
 		try {
 			await apiFetch('/admin/settings/seed', { method: 'POST' }, token);
+			clearStoreConfigCache();
 			await fetchSettings();
 		} catch (err: any) {
 			setError(err.message || 'Failed to seed default settings');
@@ -94,6 +96,8 @@ export default function AdminSettingsPage() {
 				},
 				token
 			);
+
+			clearStoreConfigCache();
 
 			// Update local state
 			setSettings((prev) =>

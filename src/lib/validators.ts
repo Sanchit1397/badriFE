@@ -58,6 +58,5 @@ export const cartItemSchema = z.object({
 
 export const createOrderSchema = z.object({
 	items: z.array(cartItemSchema).min(1),
-	deliveryFee: z.number().nonnegative(),
 	address: z.string().optional(),
 });

@@ -8,6 +8,7 @@ import { apiFetch } from '@/lib/api';
 import ProductImage from '@/components/ProductImage';
 import CategoryRail from '@/components/CategoryRail';
 import { calculateDiscountedPrice, hasActiveDiscount } from '@/lib/discount';
+import { getStoreConfig } from '@/lib/storeConfig';
 
 interface Category {
 	slug: string;
@@ -31,15 +32,18 @@ export default function HomePage() {
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [deals, setDeals] = useState<Product[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [storeName, setStoreName] = useState('BadrikiDukaan');
 
 	useEffect(() => {
 		let mounted = true;
 		const fetchData = async () => {
 			try {
-				const [categoryData, data] = await Promise.all([
+				const [categoryData, data, storeCfg] = await Promise.all([
 					apiFetch<{ items: Category[] }>('/catalog/categories'),
-					apiFetch<{ items: Product[] }>('/catalog/products?published=true&limit=6')
+					apiFetch<{ items: Product[] }>('/catalog/products?published=true&limit=6'),
+					getStoreConfig().catch(() => null)
 				]);
+				if (mounted && storeCfg?.store_name?.trim()) setStoreName(storeCfg.store_name.trim());
 				if (mounted) setCategories(categoryData.items);
 				const discountedProducts = data.items.filter((p) => hasActiveDiscount(p.discount));
 				if (mounted) setDeals(discountedProducts.slice(0, 6));
@@ -61,7 +65,7 @@ export default function HomePage() {
 			{/* Welcome Section */}
 			<div className="mb-8">
 				<h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100">
-					Welcome to BadrikiDukaan 🛒
+					Welcome to {storeName} 🛒
 				</h1>
 				<p className="text-gray-600 dark:text-gray-400">Discover great deals and shop for your favorites!</p>
 			</div>

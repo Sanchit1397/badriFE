@@ -1,10 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth';
 import { useCartStore } from '@/store/cart';
+import { getStoreConfig } from '@/lib/storeConfig';
 
 export default function Nav() {
+	const [storeName, setStoreName] = useState('BadrikiDukaan');
 	const token = useAuthStore((s) => s.token);
 	const role = useAuthStore((s) => s.role);
 	const clearAuth = useAuthStore((s) => s.clearAuth);
@@ -13,6 +16,18 @@ export default function Nav() {
 	const isAdmin = role === 'admin';
 	const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
+	useEffect(() => {
+		let cancelled = false;
+		getStoreConfig()
+			.then((c) => {
+				if (!cancelled && c.store_name?.trim()) setStoreName(c.store_name.trim());
+			})
+			.catch(() => {});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
 	function handleLogout() {
 		clearAuth();
 		window.location.href = '/auth/login';
@@ -20,8 +35,8 @@ export default function Nav() {
 
 	return (
 		<nav className="mx-auto max-w-5xl flex flex-wrap gap-3 sm:gap-4 p-4 items-center">
-			<Link href="/" className="text-sm hover:text-orange-600">
-				Home
+			<Link href="/" className="text-sm font-semibold text-gray-900 hover:text-orange-600 mr-1 sm:mr-3" title="Home">
+				{storeName}
 			</Link>
 			<Link href="/products" className="text-sm hover:text-orange-600">
 				Products
