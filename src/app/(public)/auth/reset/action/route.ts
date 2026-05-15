@@ -4,7 +4,7 @@ import { getApiBaseUrl } from '@/lib/api';
 export async function POST(req: NextRequest) {
   const base = getApiBaseUrl();
   const url = new URL(req.url);
-  const token = url.searchParams.get('token') || '';
+  const token = (url.searchParams.get('token') || '').trim();
   const form = await req.formData();
   const password = String(form.get('password') || '');
   const res = await fetch(`${base}/auth/reset`, {
