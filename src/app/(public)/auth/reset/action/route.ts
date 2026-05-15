@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiBaseUrl } from '@/lib/api';
 
+/** After a form POST, redirect with 303 so the browser follows with GET (307 keeps POST). */
+function redirectAfterPost(url: URL | string) {
+  return NextResponse.redirect(url, 303);
+}
+
 export async function POST(req: NextRequest) {
   const base = getApiBaseUrl();
   const url = new URL(req.url);
@@ -18,9 +23,9 @@ export async function POST(req: NextRequest) {
     const redirectUrl = new URL('/auth/reset', req.nextUrl.origin);
     redirectUrl.searchParams.set('token', token);
     redirectUrl.searchParams.set('error', msg);
-    return NextResponse.redirect(redirectUrl);
+    return redirectAfterPost(redirectUrl);
   }
-  return NextResponse.redirect(new URL('/auth/login', req.nextUrl.origin));
+  return redirectAfterPost(new URL('/auth/login', req.nextUrl.origin));
 }
 
 
