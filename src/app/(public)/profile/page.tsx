@@ -6,6 +6,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth';
 import { apiFetch } from '@/lib/api';
+import Pagination from '@/components/Pagination';
+import SearchInput from '@/components/SearchInput';
+import { useDebouncedValue } from '@/lib/useDebouncedValue';
+
+const ORDERS_PAGE_SIZE = 10;
 
 interface Profile {
 	_id: string;
@@ -37,6 +42,11 @@ export default function ProfilePage() {
 
 	const [profile, setProfile] = useState<Profile | null>(null);
 	const [orders, setOrders] = useState<Order[]>([]);
+	const [ordersPage, setOrdersPage] = useState(1);
+	const [ordersTotalPages, setOrdersTotalPages] = useState(1);
+	const [ordersSearch, setOrdersSearch] = useState('');
+	const debouncedOrdersSearch = useDebouncedValue(ordersSearch.trim(), 300);
+	const [ordersLoading, setOrdersLoading] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [activeTab, setActiveTab] = useState<'info' | 'orders' | 'password'>('info');
 
@@ -60,14 +70,10 @@ export default function ProfilePage() {
 			return;
 		}
 
-		const fetchData = async () => {
+		const fetchProfile = async () => {
 			try {
-				const [profileData, ordersData] = await Promise.all([
-					apiFetch<{ profile: Profile }>('/profile', {}, token),
-					apiFetch<{ orders: Order[] }>('/profile/orders', {}, token),
-				]);
+				const profileData = await apiFetch<{ profile: Profile }>('/profile', {}, token);
 				setProfile(profileData.profile);
-				setOrders(ordersData.orders);
 				setName(profileData.profile.name);
 				setEmail(profileData.profile.email);
 				setPhone(profileData.profile.phone || '');
@@ -80,8 +86,48 @@ export default function ProfilePage() {
 			}
 		};
 
-		fetchData();
+		fetchProfile();
 	}, [token, router]);
+
+	useEffect(() => {
+		if (!token || activeTab !== 'orders') return;
+
+		let mounted = true;
+		const fetchOrders = async () => {
+			setOrdersLoading(true);
+			try {
+				const params = new URLSearchParams({
+					page: String(ordersPage),
+					limit: String(ORDERS_PAGE_SIZE),
+				});
+				if (debouncedOrdersSearch) params.set('q', debouncedOrdersSearch);
+				const ordersData = await apiFetch<{
+					orders: Order[];
+					totalPages: number;
+				}>(`/profile/orders?${params.toString()}`, {}, token);
+				if (mounted) {
+					setOrders(ordersData.orders);
+					setOrdersTotalPages(ordersData.totalPages);
+				}
+			} catch (err: unknown) {
+				if (mounted) {
+					const errorMessage = err instanceof Error ? err.message : 'Failed to load orders';
+					setError(errorMessage);
+				}
+			} finally {
+				if (mounted) setOrdersLoading(false);
+			}
+		};
+
+		fetchOrders();
+		return () => {
+			mounted = false;
+		};
+	}, [token, activeTab, ordersPage, debouncedOrdersSearch]);
+
+	useEffect(() => {
+		setOrdersPage(1);
+	}, [debouncedOrdersSearch]);
 
 	const handleUpdateProfile = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -331,12 +377,27 @@ export default function ProfilePage() {
 			{/* Order History Tab */}
 			{activeTab === 'orders' && (
 				<div className="space-y-4">
-					{orders.length === 0 ? (
+					<SearchInput
+						value={ordersSearch}
+						onChange={setOrdersSearch}
+						placeholder="Search by order ID, product, phone, status…"
+					/>
+					{ordersLoading ? (
 						<div className="p-6 border rounded text-center text-gray-900 dark:text-gray-100">
-							<p className="mb-4">You haven't placed any orders yet.</p>
-							<Link href="/products" className="text-orange-600 hover:underline">
-								Start Shopping
-							</Link>
+							Loading orders…
+						</div>
+					) : orders.length === 0 ? (
+						<div className="p-6 border rounded text-center text-gray-900 dark:text-gray-100">
+							<p className="mb-4">
+								{debouncedOrdersSearch
+									? 'No orders match your search.'
+									: "You haven't placed any orders yet."}
+							</p>
+							{!debouncedOrdersSearch && (
+								<Link href="/products" className="text-orange-600 hover:underline">
+									Start Shopping
+								</Link>
+							)}
 						</div>
 					) : (
 						orders.map((order) => (
@@ -385,6 +446,12 @@ export default function ProfilePage() {
 							</div>
 						))
 					)}
+					<Pagination
+						page={ordersPage}
+						totalPages={ordersTotalPages}
+						onPageChange={setOrdersPage}
+						className="justify-center"
+					/>
 				</div>
 			)}
 

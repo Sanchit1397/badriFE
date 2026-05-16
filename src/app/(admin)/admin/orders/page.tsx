@@ -6,6 +6,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth';
 import { apiFetch } from '@/lib/api';
+import Pagination from '@/components/Pagination';
+import SearchInput from '@/components/SearchInput';
+import { useDebouncedValue } from '@/lib/useDebouncedValue';
+
+const ORDERS_PAGE_SIZE = 20;
 
 interface Order {
 	_id: string;
@@ -25,7 +30,11 @@ export default function AdminOrdersPage() {
 	const router = useRouter();
 	const [orders, setOrders] = useState<Order[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [page, setPage] = useState(1);
+	const [totalPages, setTotalPages] = useState(1);
 	const [filter, setFilter] = useState<StatusFilter>('all');
+	const [search, setSearch] = useState('');
+	const debouncedSearch = useDebouncedValue(search.trim(), 300);
 	const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 	const [updatingStatus, setUpdatingStatus] = useState(false);
 
@@ -36,14 +45,27 @@ export default function AdminOrdersPage() {
 		}
 
 		loadOrders();
-	}, [token, role, router, filter]);
+	}, [token, role, router, filter, page, debouncedSearch]);
+
+	useEffect(() => {
+		setPage(1);
+	}, [debouncedSearch]);
 
 	const loadOrders = async () => {
 		setLoading(true);
 		try {
-			const query = filter === 'all' ? '' : `?status=${filter}`;
-			const data = await apiFetch<{ orders: Order[] }>(`/admin/orders${query}`, {}, token);
+			const params = new URLSearchParams({
+				page: String(page),
+				limit: String(ORDERS_PAGE_SIZE),
+			});
+			if (filter !== 'all') params.set('status', filter);
+			if (debouncedSearch) params.set('q', debouncedSearch);
+			const data = await apiFetch<{
+				orders: Order[];
+				totalPages: number;
+			}>(`/admin/orders?${params.toString()}`, {}, token);
 			setOrders(data.orders);
+			setTotalPages(data.totalPages);
 		} catch (err) {
 			console.error('Failed to load orders:', err);
 		} finally {
@@ -88,13 +110,24 @@ export default function AdminOrdersPage() {
 				Order Management
 			</h1>
 
+			<div className="mb-4">
+				<SearchInput
+					value={search}
+					onChange={setSearch}
+					placeholder="Search by order ID, customer, phone, product…"
+				/>
+			</div>
+
 			{/* Status Filters - Mobile Optimized */}
 			<div className="mb-4 sm:mb-6 overflow-x-auto">
 				<div className="flex gap-2 min-w-max pb-2">
 					{(['all', 'placed', 'confirmed', 'shipped', 'delivered', 'cancelled'] as StatusFilter[]).map((status) => (
 						<button
 							key={status}
-							onClick={() => setFilter(status)}
+							onClick={() => {
+								setFilter(status);
+								setPage(1);
+							}}
 							className={`px-3 sm:px-4 py-2 rounded capitalize text-sm sm:text-base whitespace-nowrap ${
 								filter === status
 									? 'bg-orange-600 text-white'
@@ -114,7 +147,11 @@ export default function AdminOrdersPage() {
 				<div className="text-center py-12 border rounded">
 					<p className="text-gray-900 dark:text-gray-100 mb-2">No orders found</p>
 					<p className="text-sm text-gray-600 dark:text-gray-400">
-						{filter === 'all' ? 'No orders yet' : `No ${filter} orders`}
+						{debouncedSearch
+							? 'Try a different search term'
+							: filter === 'all'
+								? 'No orders yet'
+								: `No ${filter} orders`}
 					</p>
 				</div>
 			) : (
@@ -185,6 +222,8 @@ export default function AdminOrdersPage() {
 					))}
 				</div>
 			)}
+
+			<Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-6 justify-center" />
 
 			{/* Status Update Modal - Mobile Optimized */}
 			{selectedOrder && (

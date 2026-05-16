@@ -5,6 +5,11 @@ import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
+import Pagination from '@/components/Pagination';
+import SearchInput from '@/components/SearchInput';
+import { useDebouncedValue } from '@/lib/useDebouncedValue';
+
+const PRODUCTS_PAGE_SIZE = 20;
 
 export default function AdminDashboard() {
     const role = useAuthStore((s) => s.role);
@@ -21,8 +26,12 @@ export default function AdminDashboard() {
 function AdminDashboardInner() {
     const token = useAuthStore((s) => s.token);
     const [filter, setFilter] = useState<'all' | 'published' | 'drafts'>('all');
+    const [search, setSearch] = useState('');
+    const debouncedSearch = useDebouncedValue(search.trim(), 300);
     const [items, setItems] = useState<{ slug: string; name: string; price: number; published: boolean }[]>([]);
     const [loading, setLoading] = useState(false);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [deleteSlug, setDeleteSlug] = useState<string | null>(null);
 
@@ -31,17 +40,32 @@ function AdminDashboardInner() {
         (async () => {
             setLoading(true);
             try {
-                const qs = new URLSearchParams({ limit: '50' });
+                const qs = new URLSearchParams({
+                    page: String(page),
+                    limit: String(PRODUCTS_PAGE_SIZE),
+                });
                 if (filter === 'published') qs.set('published', 'true');
                 if (filter === 'drafts') qs.set('published', 'false');
-                const data = await apiFetch<{ items: { slug: string; name: string; price: number; published: boolean }[] }>(`/catalog/products?${qs.toString()}`);
-                if (mounted) setItems(data.items);
+                if (debouncedSearch) qs.set('q', debouncedSearch);
+                const data = await apiFetch<{
+                    items: { slug: string; name: string; price: number; published: boolean }[];
+                    total: number;
+                    limit: number;
+                }>(`/catalog/products?${qs.toString()}`);
+                if (mounted) {
+                    setItems(data.items);
+                    setTotalPages(Math.max(1, Math.ceil(data.total / data.limit)));
+                }
             } finally {
                 if (mounted) setLoading(false);
             }
         })();
         return () => { mounted = false; };
-    }, [filter]);
+    }, [filter, page, debouncedSearch]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedSearch]);
 
     function onDelete(slug: string) {
         setDeleteSlug(slug);
@@ -81,18 +105,26 @@ function AdminDashboardInner() {
             </div>
 
             <div className="mt-8">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex flex-col gap-3 mb-3 sm:flex-row sm:items-center sm:flex-wrap">
+                    <SearchInput
+                        value={search}
+                        onChange={setSearch}
+                        placeholder="Search products by name or slug…"
+                        className="sm:max-w-xs"
+                    />
                     <span className="text-sm text-gray-600">Products</span>
-                    <div className="ml-auto flex gap-2">
-                        <button onClick={() => setFilter('all')} className={`border px-3 py-1 rounded text-sm ${filter==='all'?'bg-orange-600 text-white border-orange-600':'bg-gray-100 text-gray-800'}`}>All</button>
-                        <button onClick={() => setFilter('published')} className={`border px-3 py-1 rounded text-sm ${filter==='published'?'bg-orange-600 text-white border-orange-600':'bg-gray-100 text-gray-800'}`}>Published</button>
-                        <button onClick={() => setFilter('drafts')} className={`border px-3 py-1 rounded text-sm ${filter==='drafts'?'bg-orange-600 text-white border-orange-600':'bg-gray-100 text-gray-800'}`}>Drafts</button>
+                    <div className="sm:ml-auto flex gap-2">
+                        <button onClick={() => { setFilter('all'); setPage(1); }} className={`border px-3 py-1 rounded text-sm ${filter==='all'?'bg-orange-600 text-white border-orange-600':'bg-gray-100 text-gray-800'}`}>All</button>
+                        <button onClick={() => { setFilter('published'); setPage(1); }} className={`border px-3 py-1 rounded text-sm ${filter==='published'?'bg-orange-600 text-white border-orange-600':'bg-gray-100 text-gray-800'}`}>Published</button>
+                        <button onClick={() => { setFilter('drafts'); setPage(1); }} className={`border px-3 py-1 rounded text-sm ${filter==='drafts'?'bg-orange-600 text-white border-orange-600':'bg-gray-100 text-gray-800'}`}>Drafts</button>
                     </div>
                 </div>
                 {loading ? (
                     <p>Loading…</p>
                 ) : items.length === 0 ? (
-                    <p className="text-sm text-gray-600">No products found.</p>
+                    <p className="text-sm text-gray-600">
+                        {debouncedSearch ? 'No products match your search.' : 'No products found.'}
+                    </p>
                 ) : (
                     <table className="w-full text-sm">
                         <thead>
@@ -124,6 +156,7 @@ function AdminDashboardInner() {
                         </tbody>
                     </table>
                 )}
+                <Pagination page={page} totalPages={totalPages} onPageChange={setPage} className="mt-4" />
             </div>
             {confirmOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
